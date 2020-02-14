@@ -1,0 +1,30 @@
+embed-server --server-config=standalone-ha.xml --std-out=echo
+
+echo "Avvio configurazione JGroups."
+
+/subsystem=transactions:write-attribute(name=node-identifier,value=${env.NODENAME})
+
+/subsystem=jgroups/channel=ee:write-attribute(name=stack, value=udp)
+
+/subsystem=jgroups/stack=tcp:remove()
+/subsystem=jgroups/stack=tcp:add()
+/subsystem=jgroups/stack=tcp/transport=TCP:add(socket-binding="jgroups-tcp")
+/subsystem=jgroups/stack=tcp/protocol=JDBC_PING:add(data-source="KeycloakDS")
+
+/subsystem=jgroups/stack=tcp/protocol=MERGE3:add()
+/subsystem=jgroups/stack=tcp/protocol=FD_SOCK:add(socket-binding="jgroups-tcp-fd")
+/subsystem=jgroups/stack=tcp/protocol=FD:add()
+/subsystem=jgroups/stack=tcp/protocol=VERIFY_SUSPECT:add()
+/subsystem=jgroups/stack=tcp/protocol=pbcast.NAKACK2:add()
+/subsystem=jgroups/stack=tcp/protocol=UNICAST3:add()
+/subsystem=jgroups/stack=tcp/protocol=pbcast.STABLE:add()
+/subsystem=jgroups/stack=tcp/protocol=pbcast.GMS:add()
+/subsystem=jgroups/stack=tcp/protocol=pbcast.GMS/property=max_join_attempts:add(value=5)
+/subsystem=jgroups/stack=tcp/protocol=MFC:add()
+/subsystem=jgroups/stack=tcp/protocol=FRAG3:add()
+
+/subsystem=jgroups/channel=ee:write-attribute(name=stack, value=tcp)
+
+echo "Completata configurazione JGroups."
+
+stop-embedded-server

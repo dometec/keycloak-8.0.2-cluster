@@ -1,0 +1,87 @@
+version: "2.3"
+services:
+
+  mysql-keycloak:
+    image: mysql:8.0.13
+    cpu_percent: 40
+    mem_limit: 700MB
+    networks:
+      - testnet
+    command: --max_connections=250 --general_log=1 --slow-query-log=ON --server-id=1000 --log-bin=binlog --binlog-do-db=keycloak --binlog-format=MIXED
+    environment:
+      - MYSQL_ROOT_PASSWORD=${PASSWORD}
+      - MYSQL_DATABASE=keycloak
+      - MYSQL_USER=keycloak
+      - MYSQL_PASSWORD=${PASSWORD}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "2m"
+        max-file: "10"
+
+  keycloak1:
+    build: ./keycloak/
+    cpu_percent: 80
+    mem_limit: 3000MB
+    networks:
+      - testnet
+    environment:
+      - LC_ALL=en_US.UTF-8
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=${PASSWORD}
+      - KEYCLOAK_LOGLEVEL=DEBUG
+      - PROXY_ADDRESS_FORWARDING=true
+      - DB_VENDOR=mysql
+      - DB_ADDR=mysql-keycloak
+      - DB_PORT=3306
+      - DB_DATABASE=keycloak
+      - DB_USER=keycloak
+      - DB_PASSWORD=${PASSWORD}
+      - JDBC_PARAMS=verifyServerCertificate=false&useSSL=true
+      - NODENAME=Node1
+      - CACHE_OWNERS_COUNT=2
+      - CACHE_OWNERS_AUTH_SESSIONS_COUNT=2
+      - JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING
+      - JAVA_OPTS=-server -Xms640m -Xmx2648m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -agentlib:jdwp=transport=dt_socket,address=8787,server=y,suspend=n
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  keycloak2:
+    build: ./keycloak/
+    cpu_percent: 80
+    mem_limit: 3000MB
+    networks:
+      - testnet
+    environment:
+      - LC_ALL=en_US.UTF-8
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=${PASSWORD}
+      - KEYCLOAK_LOGLEVEL=INFO
+      - PROXY_ADDRESS_FORWARDING=true
+      - DB_VENDOR=mysql
+      - DB_ADDR=mysql-keycloak
+      - DB_PORT=3306
+      - DB_DATABASE=keycloak
+      - DB_USER=keycloak
+      - DB_PASSWORD=${PASSWORD}
+       #- JDBC_PARAMS=verifyServerCertificate=false&useSSL=true # TODO verify exception on wildfly shutdown
+      - JDBC_PARAMS=useSSL=false  # this instance is connectet di mysql without ssl
+      - NODENAME=Node2
+      - CACHE_OWNERS_COUNT=2
+      - CACHE_OWNERS_AUTH_SESSIONS_COUNT=2
+      - JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING
+      - JAVA_OPTS=-server -Xms640m -Xmx2648m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -agentlib:jdwp=transport=dt_socket,address=8787,server=y,suspend=n
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
+    
+networks:
+  testnet:
